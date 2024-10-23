@@ -23,7 +23,6 @@ import java.util.Date
 import java.util.Locale
 
 class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
-
     private var isEdit = false
     private var note: Note? = null
     private var position: Int = 0
@@ -43,14 +42,8 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityNoteAddUpdateBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        /* ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-             insets
-         }*/
 
         noteHelper = NoteHelper.getInstance(applicationContext)
         noteHelper.open()
@@ -87,13 +80,11 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
 
         binding.btnSubmit.setOnClickListener(this)
 
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+        onBackPressedDispatcher.addCallback(this, object: OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 showAlertDialog(ALERT_DIALOG_CLOSE)
             }
         })
-
-
     }
 
     override fun onClick(view: View) {
@@ -101,6 +92,9 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
             val title = binding.edtTitle.text.toString().trim()
             val description = binding.edtDescription.text.toString().trim()
 
+            /*
+            Jika fieldnya masih kosong maka tampilkan error
+             */
             if (title.isEmpty()) {
                 binding.edtTitle.error = "Field can not be blank"
                 return
@@ -113,12 +107,16 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
             intent.putExtra(EXTRA_NOTE, note)
             intent.putExtra(EXTRA_POSITION, position)
 
+            // Gunakan contentvalues untuk menampung data
             val values = ContentValues()
             values.put(DatabaseContract.NoteColumns.TITLE, title)
             values.put(DatabaseContract.NoteColumns.DESCRIPTION, description)
 
+            /*
+            Jika merupakan edit maka setresultnya UPDATE, dan jika bukan maka setresultnya ADD
+            */
             if (isEdit) {
-                val result = noteHelper.update(note?.id.toString(), values).toLong()
+                val result = noteHelper.update(note?.id.toString(), values)
                 if (result > 0) {
                     setResult(RESULT_UPDATE, intent)
                     finish()
@@ -131,7 +129,7 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
                 }
             } else {
                 note?.date = getCurrentDate()
-                values.put(DATE, getCurrentDate())
+                values.put(DatabaseContract.NoteColumns.DATE, getCurrentDate())
                 val result = noteHelper.insert(values)
 
                 if (result > 0) {
@@ -152,6 +150,7 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
     private fun getCurrentDate(): String {
         val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault())
         val date = Date()
+
         return dateFormat.format(date)
     }
 
@@ -170,6 +169,11 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
         return super.onOptionsItemSelected(item)
     }
 
+    /*
+    Konfirmasi dialog sebelum proses batal atau hapus
+    close = 10
+    deleteNote = 20
+     */
     private fun showAlertDialog(type: Int) {
         val isDialogClose = type == ALERT_DIALOG_CLOSE
         val dialogTitle: String
@@ -211,6 +215,4 @@ class NoteAddUpdateActivity : AppCompatActivity(), View.OnClickListener {
         val alertDialog = alertDialogBuilder.create()
         alertDialog.show()
     }
-
-
 }
